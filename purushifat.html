@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shifat's Birthday Surprise</title>
+  <style>
+    :root{
+      --pink:#f472b6;
+      --pink-dark:#ec4899;
+      --bg:#fff7fb;
+      --card:#fff;
+      --muted:#6b7280;
+      --glass: rgba(255,255,255,0.6);
+      --shadow: 0 10px 30px rgba(0,0,0,0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#fff0f6,#fff);color:#111}
+    .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+    .app{width:100%;max-width:980px;background:var(--bg);border-radius:18px;padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    header{display:flex;gap:12px;align-items:center}
+    .logo{width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,var(--pink),var(--pink-dark));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:28px;box-shadow:0 6px 18px rgba(236,72,153,0.18)}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:4px 0 0;color:var(--muted);font-size:13px}
+
+    .grid{display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:16px}
+    .card{background:var(--card);border-radius:12px;padding:14px;box-shadow:var(--shadow)}
+    .photo-area{height:360px;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#fff,#fff0f6);display:flex;align-items:center;justify-content:center;position:relative}
+    .photo-area img{width:100%;height:100%;object-fit:cover;display:block}
+    .photo-controls{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+    .btn{padding:8px 12px;border-radius:10px;border:0;background:var(--pink);color:white;cursor:pointer;font-weight:600}
+    .btn.ghost{background:transparent;color:var(--pink);border:1px solid rgba(236,72,153,0.12)}
+    .small{padding:6px 8px;font-size:13px;border-radius:8px}
+    .typed{font-size:16px;font-weight:700;color:var(--pink-dark);margin-bottom:8px}
+    .muted{color:var(--muted);font-size:13px}
+
+    form.row{display:flex;gap:8px;margin-top:12px}
+    input[type="text"], input[type="file"], textarea{flex:1;padding:8px;border-radius:8px;border:1px solid #eee;outline:none}
+    .wishes{margin-top:12px;max-height:160px;overflow:auto}
+    .wish{background:#fff0fb;border-radius:8px;padding:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+    .controls-bottom{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:1000}
+
+    .drop-hint{position:absolute;left:12px;top:12px;background:var(--glass);padding:8px;border-radius:8px;font-size:12px;color:var(--pink-dark);backdrop-filter: blur(4px)}
+    .index-badge{position:absolute;right:12px;bottom:12px;background:rgba(255,255,255,0.8);padding:6px 8px;border-radius:999px;font-size:13px;color:var(--pink-dark)}
+    .audio-row{display:flex;gap:8px;align-items:center;margin-top:12px}
+    .file-input{display:none}
+    .hint{font-size:12px;color:var(--muted);margin-top:8px}
+
+    /* Confetti canvas covers whole screen */
+    canvas.confetti{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:999}
+
+    @media (max-width:880px){
+      .grid{grid-template-columns:1fr; }
+      .photo-area{height:260px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="app" id="app">
+      <header>
+        <div class="logo">❤</div>
+        <div>
+          <h1>Happy Birthday — Memory Lane</h1>
+          <p class="lead">A simple surprise page — add photos, music, wishes, then press Surprise!</p>
+        </div>
+      </header>
+
+      <div class="grid" id="mainGrid">
+        <!-- Left: photos -->
+        <div>
+          <div class="card" id="cardPhotos">
+            <div class="photo-area" id="dropArea">
+              <div class="drop-hint">Drop photos here or use "Add Photo"</div>
+              <div id="photoContainer" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                <img id="photo" src="" alt="Memory" style="display:none" />
+                <div id="empty" style="text-align:center;color:var(--muted)">
+                  <svg width="84" height="84" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-4.35-9-7.27C-1 9.1 4 4 7.5 6.5 9.5 8 12 10 12 10s2.5-2 4.5-3.5C20 4 25 9.1 21 13.73 19 16.65 12 21 12 21z" fill="#f472b6" /></svg>
+                  <div style="margin-top:8px;font-weight:700;color:var(--pink-dark)">No photos yet</div>
+                  <div class="muted" style="margin-top:6px">Drag & drop images or add below</div>
+                </div>
+              </div>
+              <div class="index-badge" id="indexBadge" style="display:none">1 / 1</div>
+            </div>
+
+            <div class="photo-controls">
+              <div>
+                <button class="small btn ghost" id="prevBtn">Prev</button>
+                <button class="small btn ghost" id="nextBtn">Next</button>
+              </div>
+              <div>
+                <button class="small btn" id="surpriseBtn">Surprise!</button>
+              </div>
+            </div>
+
+            <div class="audio-row">
+              <button class="btn small" id="playBtn">Play Music</button>
+              <label class="small btn ghost" style="cursor:pointer">
+                <input class="file-input" type="file" id="audioInput" accept="audio/*">
+                Choose audio
+              </label>
+              <div class="muted" style="font-size:12px">(optional)</div>
+            </div>
+
+            <div class="hint">Tip: you can also click "Add Photo" (bottom-right) or drag photos onto the image area.</div>
+          </div>
+        </div>
+
+        <!-- Right: typed message & wishes -->
+        <div>
+          <div class="card">
+            <div class="typed" id="typedArea">Loading message…</div>
+            <div class="muted">Typewriter message above — edit message variable inside the HTML if you want to change wording.</div>
+
+            <form id="wishForm" class="row" onsubmit="return false" style="margin-top:12px">
+              <input type="text" id="wishInput" placeholder="Write a short wish or memory..." />
+              <button id="saveWish" class="btn small">Save</button>
+            </form>
+
+            <div class="wishes" id="wishesList"></div>
+
+            <div class="card" style="margin-top:12px">
+              <div style="display:flex;gap:8px;align-items:center">
+                <input id="autoplayToggle" type="checkbox" /><label for="autoplayToggle" class="muted" style="margin-left:6px">Auto slideshow</label>
+              </div>
+              <div style="margin-top:8px" class="muted">Click a saved wish to remove it.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- floating controls -->
+      <div class="controls-bottom">
+        <label class="btn ghost" title="Add photo" style="cursor:pointer">
+          <input class="file-input" type="file" id="photoInput" accept="image/*" />
+          Add Photo
+        </label>
+        <button class="btn" id="clearAll">Clear All</button>
+      </div>
+
+      <canvas class="confetti" id="confettiCanvas"></canvas>
+    </div>
+  </div>
+
+  <script>
+    /* ------------------------------
+       Simple Memory Lane — single file
+       Save as index.html and open in browser
+       ------------------------------ */
+
+    // Configurable message:
+    const MESSAGE = "Happy Birthday, my love — every beat of my heart is yours. 💖";
+
+    // DOM
+    const photoInput = document.getElementById('photoInput');
+    const photo = document.getElementById('photo');
+    const empty = document.getElementById('empty');
+    const indexBadge = document.getElementById('indexBadge');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const surpriseBtn = document.getElementById('surpriseBtn');
+    const confettiCanvas = document.getElementById('confettiCanvas');
+    const playBtn = document.getElementById('playBtn');
+    const audioInput = document.getElementById('audioInput');
+    const typedArea = document.getElementById('typedArea');
+    const wishForm = document.getElementById('wishForm');
+    const wishInput = document.getElementById('wishInput');
+    const saveWish = document.getElementById('saveWish');
+    const wishesList = document.getElementById('wishesList');
+    const clearAll = document.getElementById('clearAll');
+    const dropArea = document.getElementById('dropArea');
+    const audioEl = new Audio();
+    const autoplayToggle = document.getElementById('autoplayToggle');
+
+    // Storage keys
+    const K_PHOTOS = 'rml_photos_simple_v1';
+    const K_WISHES = 'rml_wishes_simple_v1';
+    const K_AUDIO = 'rml_audio_simple_v1';
+
+    // State
+    let photos = JSON.parse(localStorage.getItem(K_PHOTOS) || '[]');
+    let wishes = JSON.parse(localStorage.getItem(K_WISHES) || '[]');
+    let audioSrc = localStorage.getItem(K_AUDIO) || '';
+    let idx = 0;
+    let autoTimer = null;
+
+    // --- Typed message ---
+    (function typewriter(msg, el, speed=40){
+      let i=0; el.textContent = '';
+      const t = setInterval(()=> {
+        el.textContent = msg.slice(0, ++i);
+        if(i>=msg.length) clearInterval(t);
+      }, speed);
+    })(MESSAGE, typedArea, 45);
+
+    // --- Photo rendering ---
+    function renderPhoto(){
+      if(photos.length === 0){
+        photo.style.display = 'none';
+        empty.style.display = 'block';
+        indexBadge.style.display = 'none';
+      } else {
+        const src = photos[idx % photos.length];
+        photo.src = src;
+        photo.style.display = 'block';
+        empty.style.display = 'none';
+        indexBadge.style.display = 'block';
+        indexBadge.textContent = (idx % photos.length + 1) + ' / ' + photos.length;
+      }
+    }
+
+    function savePhotos(){
+      localStorage.setItem(K_PHOTOS, JSON.stringify(photos));
+    }
+
+    // file input for photo
+    photoInput.addEventListener('change', async (e)=>{
+      const f = e.target.files?.[0];
+      if(!f) return;
+      const d = await readFileAsDataURL(f);
+      photos.unshift(d);
+      if(photos.length>20) photos = photos.slice(0,20);
+      savePhotos();
+      idx = 0;
+      renderPhoto();
+      photoInput.value = '';
+    });
+
+    // drag/drop
+    dropArea.addEventListener('dragover', (e)=>{ e.preventDefault(); dropArea.style.opacity = 0.9; });
+    dropArea.addEventListener('dragleave', ()=>{ dropArea.style.opacity = 1; });
+    dropArea.addEventListener('drop', async (e)=> {
+      e.preventDefault(); dropArea.style.opacity = 1;
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).slice(0,10);
+      for(const f of files){
+        const d = await readFileAsDataURL(f);
+        photos.unshift(d);
+      }
+      if(photos.length>20) photos = photos.slice(0,20);
+      savePhotos();
+      idx = 0;
+      renderPhoto();
+    });
+
+    function readFileAsDataURL(file){
+      return new Promise((res, rej)=>{
+        const r = new FileReader();
+        r.onload = ()=>res(r.result);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+    }
+
+    prevBtn.addEventListener('click', ()=> {
+      if(photos.length===0) return;
+      idx = (idx - 1 + photos.length) % photos.length;
+      renderPhoto();
+    });
+    nextBtn.addEventListener('click', ()=> {
+      if(photos.length===0) return;
+      idx = (idx + 1) % photos.length;
+      renderPhoto();
+    });
+
+    // --- Audio handling ---
+    if(audioSrc) {
+      audioEl.src = audioSrc;
+      playBtn.textContent = 'Play Music';
+    }
+    playBtn.addEventListener('click', ()=>{
+      if(!audioEl.src){
+        alert('Choose an audio file first (Choose audio).');
+        return;
+      }
+      if(audioEl.paused){
+        audioEl.play();
+        playBtn.textContent = 'Pause Music';
+      } else {
+        audioEl.pause();
+        playBtn.textContent = 'Play Music';
+      }
+    });
+    audioInput.addEventListener('change', async (e)=>{
+      const f = e.target.files?.[0];
+      if(!f) return;
+      const d = await readFileAsDataURL(f);
+      audioEl.src = d;
+      localStorage.setItem(K_AUDIO, d);
+      audioInput.value = '';
+      playBtn.textContent = 'Play Music';
+    });
+
+    // --- Wishes ---
+    function renderWishes(){
+      wishesList.innerHTML = '';
+      if(wishes.length === 0){
+        wishesList.innerHTML = '<div class="muted">No wishes yet — be the first ❤️</div>';
+        return;
+      }
+      wishes.forEach((w, i) => {
+        const div = document.createElement('div');
+        div.className = 'wish';
+        div.innerHTML = '<div style="flex:1">'+escapeHtml(w.text)+'</div><div style="margin-left:8px;color:#b91c6a;cursor:pointer">Remove</div>';
+        div.querySelector('div:last-child').addEventListener('click', ()=> {
+          wishes.splice(i,1); saveWishes(); renderWishes();
+        });
+        wishesList.appendChild(div);
+      });
+    }
+    function saveWishes(){ localStorage.setItem(K_WISHES, JSON.stringify(wishes)); }
+
+    saveWish.addEventListener('click', ()=>{
+      const v = wishInput.value.trim();
+      if(!v) return;
+      wishes.unshift({ text: v, t: Date.now() });
+      if(wishes.length>40) wishes = wishes.slice(0,40);
+      saveWishes();
+      wishInput.value = '';
+      renderWishes();
+    });
+
+    // clear all
+    clearAll.addEventListener('click', ()=>{
+      if(!confirm('Clear all photos, audio, and wishes?')) return;
+      photos = []; wishes = []; audioEl.src = ''; localStorage.removeItem(K_PHOTOS); localStorage.removeItem(K_WISHES); localStorage.removeItem(K_AUDIO);
+      renderPhoto(); renderWishes(); playBtn.textContent = 'Play Music';
+    });
+
+    // small helper
+    function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])); }
+
+    // --- Auto slideshow ---
+    autoplayToggle.addEventListener('change', ()=>{
+      if(autoplayToggle.checked) startAuto(); else stopAuto();
+    });
+    function startAuto(){
+      stopAuto();
+      autoTimer = setInterval(()=> {
+        if(photos.length>0){ idx = (idx + 1) % photos.length; renderPhoto(); }
+      }, 4200);
+    }
+    function stopAuto(){ if(autoTimer) { clearInterval(autoTimer); autoTimer = null; } }
+
+    // --- Confetti (simple) ---
+    const C = confettiCanvas;
+    const ctx = C.getContext('2d');
+    let confettiPieces = [];
+    function resizeCanvas(){ C.width = innerWidth; C.height = innerHeight; }
+    addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function spawnConfetti(count=120){
+      confettiPieces = [];
+      for(let i=0;i<count;i++){
+        confettiPieces.push({
+          x: Math.random()*C.width,
+          y: -20 - Math.random()*C.height*0.2,
+          vx: (Math.random()-0.5)*6,
+          vy: 2+Math.random()*6,
+          size: 6+Math.random()*10,
+          rot: Math.random()*360,
+          vr: (Math.random()-0.5)*10,
+          color: randomColor()
+        });
+      }
+      animateConfetti();
+      setTimeout(()=>{ confettiPieces = []; }, 6000);
+    }
+    function randomColor(){
+      const palette = ['#FFB6C1','#F472B6','#F0ABFC','#FB7185','#FDE68A','#34D399','#60A5FA'];
+      return palette[Math.floor(Math.random()*palette.length)];
+    }
+    let confAni = null;
+    function animateConfetti(){
+      if(confAni) cancelAnimationFrame(confAni);
+      const loop = ()=> {
+        ctx.clearRect(0,0,C.width,C.height);
+        for(const p of confettiPieces){
+          p.x += p.vx; p.y += p.vy; p.vy += 0.05; p.rot += p.vr;
+          ctx.save();
+          ctx.translate(p.x,p.y);
+          ctx.rotate(p.rot * Math.PI/180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+          ctx.restore();
+        }
+        confettiPieces = confettiPieces.filter(p => p.y < C.height + 50);
+        if(confettiPieces.length>0) confAni = requestAnimationFrame(loop); else { ctx.clearRect(0,0,C.width,C.height); confAni = null; }
+      };
+      loop();
+    }
+
+    surpriseBtn.addEventListener('click', ()=>{
+      spawnConfetti(180);
+      // also pulse audio (play short chime) if available
+      if(!audioEl.paused) { /* keep playing background music */ }
+    });
+
+    // --- Init load/render ---
+    renderPhoto();
+    renderWishes();
+
+    // If audio saved in LS, set it
+    if(audioSrc){ audioEl.src = audioSrc; }
+
+    // load from storage variables
+    if(localStorage.getItem(K_AUDIO)){
+      // nothing else needed
+    }
+
+    // Save audio base64 if user chooses
+    // (we already wired audioInput to save)
+
+    // Helper: if there are images present but not shown (first load), show first
+    if(photos.length>0) idx = 0;
+
+    // helpers: keyboard arrows
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowLeft') prevBtn.click();
+      if(e.key === 'ArrowRight') nextBtn.click();
+      if(e.key.toLowerCase() === 's') surpriseBtn.click();
+    });
+
+    // small UX: clicking a wish can remove it (already wired), also allow click on image to toggle fullscreen
+    photo.addEventListener('click', ()=> {
+      if(photo.requestFullscreen) photo.requestFullscreen();
+    });
+
+    // try to autoplay if saved audio and user toggles play
+    // (browsers often block autoplay; user must interact)
+    // END
+
+  </script>
+</body>
+</html>
